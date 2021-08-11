@@ -12,7 +12,7 @@ class Learning:
         self.discount_factor = 0.9
         self.learning_rate = 0.8
         self.reward = {0: -1, 1: -100}
-        self.epsilon = 0.9  # for epsilon greedy algorithm
+        self.epsilon = 0.1  # for epsilon greedy algorithm
         self.moves = []
         self.scores = []
         self.max_score = 0
@@ -24,7 +24,7 @@ class Learning:
 
     def load_qvalues(self):
         try:
-            with open("data\q_values.json", "r") as file:
+            with open("data\game_history.json", "r") as file:
                 self.qvalues = json.load(file)
         except IOError:
             self.initialize_qvalues(self.previous_state)
@@ -33,7 +33,7 @@ class Learning:
 
     def initialize_qvalues(self, state):
         if self.qvalues.get(state) is None:
-            self.qvalues[state] = [0, 0, 0];
+            self.qvalues[state] = [0, 0, 0]
 
     def act(self, x, y, vel):
         state = self.get_state(x, y, vel)
@@ -55,6 +55,8 @@ class Learning:
         self.max_score = max(score, self.max_score)
 
         history = list(reversed(self.moves))
+        print('/n/n')
+        print(history)
         dead = True if int(history[0][2].split("_")[1]) > 120 else False
         t, last_flap = 0, True
         for move in history:
@@ -71,13 +73,13 @@ class Learning:
                 last_flap = False
                 dead = False
 
-            self.qvalues[state][action] = (1 - self.learning_rate) * (self.qvalues[state][action] +
+            self.qvalues[state][action] =  (self.qvalues[state][action] +
                                                                       self.learning_rate * (
                                                                               reward + self.discount_factor *
                                                                               max(self.qvalues[state][0:2])))
 
-            if self.learning_rate > 0.1:
-                self.learning_rate = 0.1
+            if self.learning_rate < 0.1:
+                self.learning_rate = 0.9
 
             if self.epsilon > 0:
                 self.epsilon = 0
@@ -95,7 +97,9 @@ class Learning:
         else:
             y = int(y) - (int(y) % 60)
 
-        return str(int(x)) + "_" + str(int(y)) + "_" + str(vel)
+        state = str(int(x)) + "_" + str(int(y)) + "_" + str(vel)
+        self.initialize_qvalues(state)
+        return state
 
     def end_episode(self, score):
         self.episode += 1
