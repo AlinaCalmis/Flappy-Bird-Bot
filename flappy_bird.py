@@ -16,6 +16,7 @@ sys.path.append(os.getcwd())
 # init bot
 bot = Learning()
 
+# init game
 FPS = 30
 SCREEN_WIDTH = 288
 SCREEN_HEIGHT = 512
@@ -226,27 +227,27 @@ def main_game(info):
     player_flap_speed = -9
     player_flapped = False
 
-    # if len(STATE_HISTORY) < 20:
-    #     STATE_HISTORY.clear()
-    # resume_from_history = len(STATE_HISTORY) > 0
-    # initial_len_history = len(STATE_HISTORY)
+    if len(STATE_HISTORY) < 20:
+         STATE_HISTORY.clear()
+    resume_from_history = len(STATE_HISTORY) > 0
+    initial_len_history = len(STATE_HISTORY)
     resume_from = 0
-    # current_score = STATE_HISTORY[-1][5]
-    # print_/score = False
+    current_score = STATE_HISTORY[-1][5] if resume_from_history else None
+    print_score = False
 
     while True:
-        # if resume_from_history:
+        #if resume_from_history:
         #     if resume_from == 0:
-        #         player_x, player_y, player_vel_y, lower_pipes, upper_pipes, score, player_index = STATE_HISTORY[
-        #             resume_from]
+        #         player_x, player_y, player_vel_y, lower_pipes, upper_pipes, score, player_id = \
+        #             STATE_HISTORY[resume_from]
         #     else:
         #         lower_pipes, upper_pipes = STATE_HISTORY[resume_from][3], STATE_HISTORY[resume_from][4]
         #     resume_from += 1
-        # else:
+        #else:
         #     STATE_HISTORY.append([player_x, player_y, player_vel_y, copy.deepcopy(lower_pipes), copy.deepcopy(
-        #         upper_pipes), score, player_index])
+        #         upper_pipes), score, player_id])
 
-        if -player_x + lower_pipes[0]['x'] > 30:
+        if player_x  > 30:
             my_pipe = lower_pipes[0]
         else:
             my_pipe = lower_pipes[1]
@@ -265,7 +266,7 @@ def main_game(info):
                     player_flapped = True
                     SOUNDS['wing'].play()
 
-        if bot.act(-player_x + my_pipe['x'], -player_y + my_pipe['y'], player_vel_y):
+        if bot.act(player_x , player_y , player_vel_y, lower_pipes):
             if player_y > -2 * IMAGES['player'][0].get_width():
                 player_vel_y = player_flap_speed
                 player_flapped = True

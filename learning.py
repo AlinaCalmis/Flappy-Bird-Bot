@@ -11,6 +11,7 @@ class Learning:
         self.previous_action = 0
         self.discount_factor = 0.9
         self.learning_rate = 0.8
+        self.learning_rate_decay = 0.00003
         self.reward = {0: -1, 1: -100}
         self.epsilon = 0.1  # for epsilon greedy algorithm
         self.moves = []
@@ -35,8 +36,8 @@ class Learning:
         if self.qvalues.get(state) is None:
             self.qvalues[state] = [0, 0, 0]
 
-    def act(self, x, y, vel):
-        state = self.get_state(x, y, vel)
+    def act(self, x, y, vel, pipes):
+        state = self.get_state(x, y, vel,pipes)
         self.moves.append((self.previous_state, self.previous_action, state))
         self.previous_state = state
         if random.random() <= self.epsilon:
@@ -64,6 +65,7 @@ class Learning:
             state, action, new_state = move
             self.qvalues[state][2] += 1
             reward = self.reward[0]
+
             if t <= 2:
                 reward = self.reward[1]
                 if action:
@@ -78,26 +80,45 @@ class Learning:
                                                                               reward + self.discount_factor *
                                                                               max(self.qvalues[state][0:2])))
 
-            if self.learning_rate < 0.1:
-                self.learning_rate = 0.9
+            if self.learning_rate > 0.1:
+                self.learning_rate = max(self.learning_rate_decay -self.learning_rate_decay, 0.1)
 
-            if self.epsilon > 0:
-                self.epsilon = 0
+            #if self.epsilon > 0:
+            #    self.epsilon = 0
 
             self.moves = []
 
-    def get_state(self, x, y, vel):
-        if x < 140:
-            x = int(x) - (int(x) % 10)
-        else:
-            x = int(x) - (int(x) % 70)
+    def get_state(self, x, y, vel, pipes):
 
-        if y < 180:
-            y = int(y) - (int(y) % 10)
-        else:
-            y = int(y) - (int(y) % 60)
+        pipe0, pipe1 = pipes[0], pipes[1]
+        if x - pipes[0]["x"] >= 50:
+            pipe0 = pipes[1]
+            if len(pipes) > 2:
+                pipe1 = pipes[2]
+        xx = pipe0["x"] - x
+        yy = pipe0["y"] - y
 
-        state = str(int(x)) + "_" + str(int(y)) + "_" + str(vel)
+        if -50 < xx <= 0:
+            y1 = pipe1["y"] - y
+        else:
+            y1 = 0
+
+        if xx < 140:
+            xx = int(xx) - (int(xx) % 10)
+        else:
+            x = int(xx) - (int(xx) % 70)
+
+        if yy < 180:
+            yy = int(yy) - (int(yy) % 10)
+        else:
+            yy = int(yy) - (int(yy) % 60)
+
+            if y1 < 180:
+                y1 = int(y1) - (int(y1) % 10)
+            else:
+                y1 = int(y1) - (int(y1) % 60)
+
+        state = str(int(xx)) + "_" + str(int(yy)) + "_" + str(int(vel)) + "_" + str(int(y1))
         self.initialize_qvalues(state)
         return state
 
@@ -111,8 +132,8 @@ class Learning:
             self.qvalues[state][action] = (1 - self.learning_rate) * (self.qvalues[state][action] +
                                                                       self.learning_rate * (
                                                                               self.reward[0] +
-                                                                              self.discount_factor *
-                                                                              max(self.qvalues[state][0:2])))
+                                                                 max(self.qvalues[state][0:2])))
+
         self.moves = []
 
     def qvalues_to_json(self):
