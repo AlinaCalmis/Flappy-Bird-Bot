@@ -40,9 +40,9 @@ class Learning:
         state = self.get_state(x, y, vel,pipes)
         self.moves.append((self.previous_state, self.previous_action, state))
         self.previous_state = state
-        if random.random() <= self.epsilon:
-            self.previous_action = random.choice([0, 1])
-            return self.previous_action
+        #if random.random() <= self.epsilon:
+        #    self.previous_action = random.choice([0, 1])
+        #    return self.previous_action
 
         # Chose the best action : default is 0 (don't do anything) or 1 (flap)
         self.previous_action = 0 if self.qvalues[state][0] >= self.qvalues[state][1] else 1
@@ -102,8 +102,9 @@ class Learning:
             y1 = pipe1["y"] - y
         else:
             y1 = 0
-
-        if xx < 140:
+        if xx < -40:
+            xx = int(xx)
+        elif xx < 140:
             xx = int(xx) - (int(xx) % 10)
         else:
             x = int(xx) - (int(xx) % 70)
