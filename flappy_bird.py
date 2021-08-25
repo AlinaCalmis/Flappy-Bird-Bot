@@ -332,7 +332,7 @@ def get_collision(player_rectangle, pipe_rectangle, p_hitmask, pipe_hitmask):
 def getRandomPipe():
     """Returns a randomly generated pipe"""
     #setup for the distances between pipes
-    MODX = 20; #change for increase or decrease x distance between pipes default --> 20
+    MODX = 20; #change for increase or decrease x distance between pipes default --> 10
     MODY = 0;  #change for increase or decrease y distance between pipes default --> 0
 
     # y of gap between upper and lower pipe
