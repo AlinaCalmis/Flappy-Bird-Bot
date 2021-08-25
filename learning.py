@@ -11,7 +11,7 @@ class Learning:
         self.previous_state = "0_0_0"
         self.previous_action = 0
         self.discount_factor = 0.9
-        self.learning_rate = 0.9
+        self.learning_rate = 1
         self.gameNR = 0
         self.LOAD_N = 25
         # self.learning_rate_decay = 0.00003
@@ -37,26 +37,15 @@ class Learning:
 
         file.close()
 
-    #
-    # def initialize_qvalues(self, state):
-    #     if self.qvalues.get(state) is None:
-    #         self.qvalues[state] = [0, 0, 0]
-
     # analizeaza ultima miscare si alege cea mai buna optiune
     def act(self, x, y, vel):
         state = self.get_state(x, y, vel)
-
-        # print(self.previous_action, self.qvalues[state], self.qvalues[state][0], self.qvalues[state][1])
 
         # add the experience to the history
         self.moves.append((self.previous_state, self.previous_action, state))
 
         # update the previous state
         self.previous_state = state
-        # if random.random() <= self.epsilon:
-        #    self.previous_action = random.choice([0, 1])
-        #    return self.previous_action
-        # print(self.qvalues[state])
 
         # Choose the best action : default is 0 (don't do anything) or 1 (flap)
         self.previous_action = 0 if self.qvalues[state][0] >= self.qvalues[state][1] else 1
@@ -69,15 +58,14 @@ class Learning:
         # Update qvalues via iterating over experiences
         history = list(reversed(self.moves))
         # print('/n/n')
-        # print(history)
+        print(history)
         dead = True if int(history[0][2].split("_")[1]) > 120 else False
 
         t, last_flap = 0, True
         for move in history:
             t += 1
             state, action, new_state = move
-            # print("mooveee",move)
-            # self.qvalues[state][1] += 1
+
             reward = self.reward[0]
 
             if t <= 2:
@@ -89,16 +77,11 @@ class Learning:
                 last_flap = False
                 dead = False
 
-            self.qvalues[state][action] = ((1 - self.learning_rate) * self.qvalues[state][action] + self.learning_rate
-                                           * (
-                                                   reward + self.discount_factor *
-                                                   max(self.qvalues[new_state])))
-            # print("interval : ", self.qvalues[state][0:2])
-            # if self.learning_rate > 0.1:
-            #     self.learning_rate = max(self.learning_rate_decay - self.learning_rate_decay, 0.1)
+            self.qvalues[state][action] = (( self.learning_rate) * self.qvalues[state][action] + self.learning_rate
+                                           * (reward + self.discount_factor * max(self.qvalues[new_state])-
+                                                                                  self.qvalues[state][action]))
+            print(state, self.qvalues[state], action, new_state, self.qvalues[new_state])
 
-            # if self.epsilon > 0:
-            #    self.epsilon = 0
             self.gameNR += 1
 
             self.moves = []

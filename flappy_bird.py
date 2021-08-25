@@ -17,7 +17,7 @@ sys.path.append(os.getcwd())
 bot = Learning()
 
 # init game
-FPS = 30
+FPS = 60
 SCREEN_WIDTH = 288
 SCREEN_HEIGHT = 512
 
@@ -236,17 +236,6 @@ def main_game(info):
     print_score = False
 
     while True:
-        #if resume_from_history:
-        #     if resume_from == 0:
-        #         player_x, player_y, player_vel_y, lower_pipes, upper_pipes, score, player_id = \
-        #             STATE_HISTORY[resume_from]
-        #     else:
-        #         lower_pipes, upper_pipes = STATE_HISTORY[resume_from][3], STATE_HISTORY[resume_from][4]
-        #     resume_from += 1
-        #else:
-        #     STATE_HISTORY.append([player_x, player_y, player_vel_y, copy.deepcopy(lower_pipes), copy.deepcopy(
-        #         upper_pipes), score, player_id])
-
         if -player_x + lower_pipes[0]['x'] > 30:
             my_pipe = lower_pipes[0]
         else:
@@ -331,6 +320,7 @@ def main_game(info):
             SCREEN.blit(IMAGES['pipe'][1], (lower['x'], lower['y']))
 
         SCREEN.blit(IMAGES['base'], (base_x, BASEH))
+        showScore(score)
         SCREEN.blit(IMAGES['player'][player_id], (player_x, player_y))
 
         # show_score(score)
@@ -415,6 +405,18 @@ def showGameOverScreen(crashInfo):
         bot.dump_qvalues(force=True)
         sys.exit()
 
+def showScore(score):
+    score_digits = [int(x) for x in list(str(score))]
+    total_width = 0
+
+    for digit in score_digits:
+        total_width += IMAGES['numbers'][digit].get_width()
+
+    offset = (SCREEN_WIDTH - total_width) / 2
+
+    for digit in score_digits:
+        SCREEN.blit(IMAGES['numbers'][digit], (offset, SCREEN_HEIGHT * 0.1))
+        offset += IMAGES['numbers'][digit].get_width()
 
 
 if __name__ == '__main__':
