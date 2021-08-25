@@ -17,7 +17,7 @@ sys.path.append(os.getcwd())
 bot = Learning()
 
 # init game
-FPS = 30
+FPS = 50000
 SCREEN_WIDTH = 288
 SCREEN_HEIGHT = 512
 
@@ -247,7 +247,7 @@ def main_game(info):
         #     STATE_HISTORY.append([player_x, player_y, player_vel_y, copy.deepcopy(lower_pipes), copy.deepcopy(
         #         upper_pipes), score, player_id])
 
-        if -player_x + lower_pipes[0]['x'] > 30:
+        if player_x  > 30:
             my_pipe = lower_pipes[0]
         else:
             my_pipe = lower_pipes[1]
@@ -257,7 +257,7 @@ def main_game(info):
             if event.type == QUIT or (event.type == KEYDOWN and event.key == K_ESCAPE):
                 # if print_score:
                 #     print('')
-                bot.qvalues_to_json(force=True)
+                bot.qvalues_to_json()
                 pygame.quit()
                 sys.exit()
             if event.type == KEYDOWN and (event.key == K_SPACE or event.key == K_UP):
@@ -266,8 +266,8 @@ def main_game(info):
                     player_flapped = True
                     SOUNDS['wing'].play()
 
-        if bot.act(-player_x + my_pipe['x'], -player_y  + my_pipe['y'], player_vel_y):
-            if player_y > -2 * IMAGES['player'][0].get_height():
+        if bot.act(player_x , player_y , player_vel_y):
+            if player_y > -2 * IMAGES['player'][0].get_width():
                 player_vel_y = player_flap_speed
                 player_flapped = True
                 SOUNDS['wing'].play()
@@ -276,15 +276,8 @@ def main_game(info):
 
         if crash_test:
             bot.update_qvalues()
-            bot.qvalues_to_json(force=False)
-            return {
-                'y': player_y,
-                'base_x': base_x,
-                'upper_pipes': upper_pipes,
-                'lower_pipes': lower_pipes,
-                'score': score,
-                'player_velocity': player_vel_y,
-            }
+            bot.qvalues_to_json()
+            return
 
         # check for score
         player_mid_pos = player_x + IMAGES["player"][0].get_width() / 2
@@ -305,8 +298,8 @@ def main_game(info):
             player_vel_y += player_acc_y
         if player_flapped:
             player_flapped = False
-        player_height = IMAGES["player"][player_id].get_height()
-        player_y += min(player_vel_y, BASEH - player_y - player_height)
+        playerHeight = IMAGES["player"][player_id].get_height()
+        player_y += min(player_vel_y, BASEH - player_y - playerHeight)
 
         # move pipes to left
         for upper, lower in zip(upper_pipes, lower_pipes):
@@ -408,13 +401,6 @@ def playerShm(playerShm):
         playerShm['val'] += 1
     else:
         playerShm['val'] -= 1
-
-def showGameOverScreen(crashInfo):
-
-    if bot.gameCNT == (10):
-        bot.dump_qvalues(force=True)
-        sys.exit()
-
 
 
 if __name__ == '__main__':
