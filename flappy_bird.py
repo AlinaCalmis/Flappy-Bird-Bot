@@ -1,4 +1,6 @@
 import copy
+import json
+import pickle
 import random
 import sys
 import os
@@ -9,55 +11,13 @@ import pygame
 from pygame.constants import *
 
 from learning import Learning
-import game as game
+
+from assets import *
 
 sys.path.append(os.getcwd())
 
 # init bot
 bot = Learning()
-
-# init game
-FPS = 60
-SCREEN_WIDTH = 288
-SCREEN_HEIGHT = 512
-
-PIPE_GAP = 100
-IMAGES, SOUNDS, HIT_MASKS = {}, {}, {}
-BASEH = SCREEN_HEIGHT * 0.79
-STATE_HISTORY = deque(maxlen=70)
-
-PLAYERS = (
-    # blue bird
-    (
-        'flappy-bird-assets/sprites/bluebird-downflap.png',
-        'flappy-bird-assets/sprites/bluebird-midflap.png',
-        'flappy-bird-assets/sprites/bluebird-upflap.png',
-    ),
-    # red bird
-    (
-        'flappy-bird-assets/sprites/redbird-downflap.png',
-        'flappy-bird-assets/sprites/redbird-midflap.png',
-        'flappy-bird-assets/sprites/redbird-upflap.png',
-    ),
-    # yellow bird
-    (
-        'flappy-bird-assets/sprites/yellowbird-downflap.png',
-        'flappy-bird-assets/sprites/yellowbird-midflap.png',
-        'flappy-bird-assets/sprites/yellowbird-upflap.png',
-    ),
-)
-
-# list of backgrounds
-BACKGROUNDS = (
-    'flappy-bird-assets/sprites/background-day.png',
-    'flappy-bird-assets/sprites/background-night.png',
-)
-
-# list of pipes
-PIPES = (
-    'flappy-bird-assets/sprites/pipe-red.png',
-    'flappy-bird-assets/sprites/pipe-green.png',
-)
 
 
 def main():
@@ -122,22 +82,27 @@ def main():
 
         # hitmask for pipes
         HIT_MASKS['pipe'] = (
-            game.get_hitmask(image_alpha=IMAGES['pipe'][0]),
-            game.get_hitmask(image_alpha=IMAGES['pipe'][1]),
+            get_hitmask(image_alpha=IMAGES['pipe'][0]),
+            get_hitmask(image_alpha=IMAGES['pipe'][1]),
         )
 
         # hitmask for player
         HIT_MASKS['player'] = (
-            game.get_hitmask(image_alpha=IMAGES['player'][0]),
-            game.get_hitmask(image_alpha=IMAGES['player'][1]),
-            game.get_hitmask(image_alpha=IMAGES['player'][2]),
+            get_hitmask(image_alpha=IMAGES['player'][0]),
+            get_hitmask(image_alpha=IMAGES['player'][1]),
+            get_hitmask(image_alpha=IMAGES['player'][2]),
         )
+        # print(HIT_MASKS)
+        with open('data/hit_masks.pkl', 'wb') as hit_masks:
+            pickle.dump(HIT_MASKS, hit_masks, pickle.HIGHEST_PROTOCOL)
+        hit_masks.close()
 
         # print(HIT_MASKS['pipe'][0])
 
         start_game = welcome_animation()
         # print(start_game.items())
-        main_game(start_game)
+        game_info = main_game(start_game)
+        # showGameOverScreen(game_info)
 
 
 def welcome_animation():
@@ -181,11 +146,11 @@ def welcome_animation():
     #     SCREEN.blit(IMAGES['background'], (0, 0))
     #     SCREEN.blit(IMAGES['player'][player_index], (player_x, player_y + player_flap['val']))
     #     SCREEN.blit(IMAGES['message'], (message_x, message_y))
-    #     SCREEN.blit(IMAGES['base'], (base_x, BASEH))
+    #     SCREEN.blit(IMAGES['base'], (base_x, BASE_H))
     #
     #     pygame.display.update()
     #     FPS_CLOCK.tick(FPS)
-
+    # print(IMAGES['pipe'][0].get_height())
     player_y = int((SCREEN_HEIGHT - IMAGES['player'][0].get_height()) / 2)
     player_generation = cycle([0, 1, 2, 1])
     return {
@@ -227,16 +192,9 @@ def main_game(info):
     player_flap_speed = -9
     player_flapped = False
 
-    if len(STATE_HISTORY) < 20:
-         STATE_HISTORY.clear()
-    resume_from_history = len(STATE_HISTORY) > 0
-    initial_len_history = len(STATE_HISTORY)
-    resume_from = 0
-    current_score = STATE_HISTORY[-1][5] if resume_from_history else None
-    print_score = False
 
     while True:
-        if -player_x + lower_pipes[0]['x'] > 30:
+        if -player_x + lower_pipes[0]['x'] > -30:
             my_pipe = lower_pipes[0]
         else:
             my_pipe = lower_pipes[1]
@@ -244,18 +202,17 @@ def main_game(info):
         for event in pygame.event.get():
 
             if event.type == QUIT or (event.type == KEYDOWN and event.key == K_ESCAPE):
-                # if print_score:
-                #     print('')
                 bot.qvalues_to_json(force=True)
                 pygame.quit()
                 sys.exit()
+
             if event.type == KEYDOWN and (event.key == K_SPACE or event.key == K_UP):
                 if player_y > -2 * IMAGES['player'][0].get_width():
                     player_vel_y = player_flap_speed
                     player_flapped = True
                     SOUNDS['wing'].play()
 
-        if bot.act(-player_x + my_pipe['x'], -player_y  + my_pipe['y'], player_vel_y):
+        if bot.act(-player_x + my_pipe['x'], -player_y + my_pipe['y'], player_vel_y):
             if player_y > -2 * IMAGES['player'][0].get_height():
                 player_vel_y = player_flap_speed
                 player_flapped = True
@@ -295,7 +252,7 @@ def main_game(info):
         if player_flapped:
             player_flapped = False
         player_height = IMAGES["player"][player_id].get_height()
-        player_y += min(player_vel_y, BASEH - player_y - player_height)
+        player_y += min(player_vel_y, BASE_H - player_y - player_height)
 
         # move pipes to left
         for upper, lower in zip(upper_pipes, lower_pipes):
@@ -319,18 +276,16 @@ def main_game(info):
             SCREEN.blit(IMAGES['pipe'][0], (upper['x'], upper['y']))
             SCREEN.blit(IMAGES['pipe'][1], (lower['x'], lower['y']))
 
-        SCREEN.blit(IMAGES['base'], (base_x, BASEH))
-        showScore(score)
+        SCREEN.blit(IMAGES['base'], (base_x, BASE_H))
+        show_score(score)
         SCREEN.blit(IMAGES['player'][player_id], (player_x, player_y))
 
-        # show_score(score)
-        # print(score)
         pygame.display.update()
         FPS_CLOCK.tick(FPS)
 
 
 def did_collide(id, player_x, player_y, upper_pipes, lower_pipes):
-    if player_y > BASEH - 25 or player_y < 0:
+    if player_y > BASE_H - 25 or player_y < 0:
         SOUNDS['hit'].play()
         return True
 
@@ -378,8 +333,8 @@ def get_collision(player_rectangle, pipe_rectangle, p_hitmask, pipe_hitmask):
 def getRandomPipe():
     """Returns a randomly generated pipe"""
     # y of gap between upper and lower pipe
-    gapY = random.randrange(0, int(BASEH * 0.6 - PIPE_GAP))
-    gapY += int(BASEH * 0.2)
+    gapY = random.randrange(0, int(BASE_H * 0.6 - PIPE_GAP))
+    gapY += int(BASE_H * 0.2)
     pipeHeight = IMAGES['pipe'][0].get_height()
     pipeX = SCREEN_WIDTH + 10
 
@@ -399,13 +354,14 @@ def playerShm(playerShm):
     else:
         playerShm['val'] -= 1
 
-def showGameOverScreen(crashInfo):
 
-    if bot.gameCNT == (10):
-        bot.dump_qvalues(force=True)
+def show_game_over_screen(crash_info):
+    if bot.gameNR == 1000:
+        bot.qvalues_to_json(force=True)
         sys.exit()
 
-def showScore(score):
+
+def show_score(score):
     score_digits = [int(x) for x in list(str(score))]
     total_width = 0
 
@@ -419,9 +375,15 @@ def showScore(score):
         offset += IMAGES['numbers'][digit].get_width()
 
 
+def get_hitmask(image_alpha):
+    """Returns a hitmask using an image's alpha."""
+    mask = []
+    for x in range(image_alpha.get_width()):
+        mask.append([])
+        for y in range(image_alpha.get_height()):
+            mask[x].append(bool(image_alpha.get_at((x, y))[3]))
+    return mask
+
+
 if __name__ == '__main__':
-    x = 0
-    # while x < 100:
     main()
-        # x += 1
-            # print(x)

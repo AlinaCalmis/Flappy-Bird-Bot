@@ -10,19 +10,13 @@ class Learning:
         # Initialize the agent
         self.previous_state = "0_0_0"
         self.previous_action = 0
-        self.discount_factor = 0.9
-        self.learning_rate = 1
+        self.discount_factor = 1
+        self.learning_rate = 0.8
         self.gameNR = 0
         self.LOAD_N = 25
-        # self.learning_rate_decay = 0.00003
         self.reward = {0: 1, 1: -100}
-        # self.epsilon = 0.1  # for epsilon greedy algorithm
         self.moves = []
         self.scores = []
-        # self.max_score = 10
-
-        # self.episode = 0
-
         self.qvalues = {}
         self.load_qvalues()
 
@@ -57,8 +51,7 @@ class Learning:
 
         # Update qvalues via iterating over experiences
         history = list(reversed(self.moves))
-        # print('/n/n')
-        print(history)
+
         dead = True if int(history[0][2].split("_")[1]) > 120 else False
 
         t, last_flap = 0, True
@@ -77,14 +70,13 @@ class Learning:
                 last_flap = False
                 dead = False
 
-            self.qvalues[state][action] = (( self.learning_rate) * self.qvalues[state][action] + self.learning_rate
-                                           * (reward + self.discount_factor * max(self.qvalues[new_state])-
-                                                                                  self.qvalues[state][action]))
-            print(state, self.qvalues[state], action, new_state, self.qvalues[new_state])
+            self.qvalues[state][action] = ((self.learning_rate) * self.qvalues[state][action] + self.learning_rate
+                                           * (reward + self.discount_factor * max(self.qvalues[new_state]) -
+                                              self.qvalues[state][action]))
 
-            self.gameNR += 1
+        self.gameNR += 1
 
-            self.moves = []
+        self.moves = []
 
     def get_state(self, x, y, vel):
 
@@ -99,7 +91,7 @@ class Learning:
             y = int(y) - (int(y) % 60)
 
         state = str(int(x)) + "_" + str(int(y)) + "_" + str(int(vel))
-        # self.initialize_qvalues(state)
+
         return state
 
     def qvalues_to_json(self, force=False):
