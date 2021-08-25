@@ -1,11 +1,12 @@
 import codecs
 import json
+from itertools import chain
 from json import JSONDecodeError
 import random
 
 
 class Learning:
-    def __init__(self):
+    def __init__(self, mode='easy'):
 
         # Initialize the agent
         self.previous_state = "0_0_0"
@@ -17,14 +18,31 @@ class Learning:
         self.reward = {0: 1, 1: -100}
         self.moves = []
         self.scores = []
+        self.mode = mode
         self.qvalues = {}
         self.load_qvalues()
 
+
+    def initialize_qvalues(self):
+        # qval = {}
+        # X -> [-40,-30...120] U [140, 210 ... 490]
+        # Y -> [-300, -290 ... 160] U [180, 240 ... 420]
+
+        for x in chain(list(range(-40, 140, 10)), list(range(140, 421, 70))):
+            for y in chain(list(range(-300, 180, 10)), list(range(180, 421, 60))):
+                for v in range(-10, 11):
+                    self.qvalues[str(x) + "_" + str(y) + "_" + str(v)] = [0, 0]
+
+        fd = open(f"data/q_values_mode_{self.mode}.json", "w")
+        json.dump(self.qvalues, fd)
+        fd.close()
+
     def load_qvalues(self):
         try:
-            with open("data\q_values.json", "r") as file:
+            with open(f"data\q_values_mode_{self.mode}.json", "r") as file:
                 self.qvalues = json.load(file)
         except IOError:
+            self.initialize_qvalues()
             return
         except JSONDecodeError:
             return
@@ -96,7 +114,7 @@ class Learning:
 
     def qvalues_to_json(self, force=False):
         if self.gameNR % self.LOAD_N == 0 or force:
-            with open("data\q_values.json", "w") as file:
+            with open(f"data\q_values_mode_{self.mode}.json", "w") as file:
                 json.dump(self.qvalues, file, ensure_ascii=False)
             file.close()
             print(f"Saving Q Table with {len(self.qvalues.keys())} states ...")

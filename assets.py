@@ -14,6 +14,14 @@ BASE_W = 336
 PIPE_W = 52
 PIPE_H = 320
 
+MODE = 'easy'
+
+EASY = 100
+MEDIUM = 60
+HARD = 10
+
+ELEVATION = 200
+
 
 PLAYERS = (
     # blue bird
