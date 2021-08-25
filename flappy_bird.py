@@ -170,17 +170,16 @@ def main_game(info):
 
     pipe1 = getRandomPipe()
     pipe2 = getRandomPipe()
-
     # list of upper pipes
     upper_pipes = [
-        {'x': SCREEN_WIDTH + 200, 'y': pipe1[0]['y']},
-        {'x': SCREEN_WIDTH + 200 + (SCREEN_WIDTH / 2), 'y': pipe2[0]['y']}
+        {'x': SCREEN_WIDTH + 200 , 'y': pipe1[0]['y']},
+        {'x': SCREEN_WIDTH + 200 + (SCREEN_WIDTH / 2) , 'y': pipe2[0]['y']}
     ]
 
     # list of lower pipes
     lower_pipes = [
         {'x': SCREEN_WIDTH + 200, 'y': pipe1[1]['y']},
-        {'x': SCREEN_WIDTH + 200 + (SCREEN_WIDTH / 2), 'y': pipe2[1]['y']}
+        {'x': SCREEN_WIDTH + 200 + (SCREEN_WIDTH / 2) , 'y': pipe2[1]['y']}
     ]
 
     pipe_vel_x = -4
@@ -332,15 +331,19 @@ def get_collision(player_rectangle, pipe_rectangle, p_hitmask, pipe_hitmask):
 
 def getRandomPipe():
     """Returns a randomly generated pipe"""
+    #setup for the distances between pipes
+    MODX = 10; #change for increase or decrease x distance between pipes default --> 10
+    MODY = 0;  #change for increase or decrease y distance between pipes default --> 0
+
     # y of gap between upper and lower pipe
     gapY = random.randrange(0, int(BASE_H * 0.6 - PIPE_GAP))
     gapY += int(BASE_H * 0.2)
     pipeHeight = IMAGES['pipe'][0].get_height()
-    pipeX = SCREEN_WIDTH + 10
+    pipeX = SCREEN_WIDTH + MODX
 
     return [
-        {'x': pipeX, 'y': gapY - pipeHeight},  # upper pipe
-        {'x': pipeX, 'y': gapY + PIPE_GAP},  # lower pipe
+        {'x': pipeX, 'y': gapY - pipeHeight - MODY},  # upper pipe
+        {'x': pipeX, 'y': gapY + PIPE_GAP + MODY},  # lower pipe
     ]
 
 
