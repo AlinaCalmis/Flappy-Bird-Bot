@@ -1,3 +1,4 @@
+import argparse
 import copy
 import json
 import pickle
@@ -16,8 +17,18 @@ from assets import *
 
 sys.path.append(os.getcwd())
 
+
+sys.path.append(os.getcwd())
+
+parser = argparse.ArgumentParser('flappy_bird_learn.py')
+parser.add_argument('--mode', type=str, default='easy', help='choose the level of hardness')
+
+args = parser.parse_args()
+
+MODE = args.mode
+
 # init bot
-bot = Learning()
+bot = Learning(mode=MODE)
 
 
 def main():
@@ -57,16 +68,23 @@ def main_game(info):
     pipe1 = get_random_pipe()
     pipe2 = get_random_pipe()
 
+    if MODE == 'easy':
+        mode_x = ELEVATION - EASY / 2
+    elif MODE == 'medium':
+        mode_x = ELEVATION - MEDIUM / 2
+    elif MODE == 'hard':
+        mode_x = ELEVATION - HARD / 2
+
     # list of upper pipes
     upper_pipes = [
-        {'x': SCREEN_WIDTH + 200, 'y': pipe1[0]['y']},
-        {'x': SCREEN_WIDTH + 200 + (SCREEN_WIDTH / 2), 'y': pipe2[0]['y']}
+        {'x': SCREEN_WIDTH + mode_x, 'y': pipe1[0]['y']},
+        {'x': SCREEN_WIDTH + ELEVATION + (SCREEN_WIDTH / 2), 'y': pipe2[0]['y']}
     ]
 
     # list of lower pipes
     lower_pipes = [
-        {'x': SCREEN_WIDTH + 200, 'y': pipe1[1]['y']},
-        {'x': SCREEN_WIDTH + 200 + (SCREEN_WIDTH / 2), 'y': pipe2[1]['y']}
+        {'x': SCREEN_WIDTH + mode_x, 'y': pipe1[1]['y']},
+        {'x': SCREEN_WIDTH + ELEVATION + (SCREEN_WIDTH / 2), 'y': pipe2[1]['y']}
     ]
 
     pipe_vel_x = -4
@@ -188,15 +206,23 @@ def get_collision(player_rectangle, pipe_rectangle, p_hitmask, pipe_hitmask):
 
 def get_random_pipe():
     """Returns a randomly generated pipe"""
+    if MODE == 'easy':
+        MODX = EASY  # change for increase or decrease x distance between pipes default --> 10
+    elif MODE == 'medium':
+        MODX = MEDIUM
+    else:
+        MODX = HARD
+    MODY = MODX / 3  # change for increase or decrease y distance between pipes default --> 0
+
     # y of gap between upper and lower pipe
-    gap_y = random.randrange(0, int(BASE_H * 0.6 - PIPE_GAP))
-    gap_y += int(BASE_H * 0.2)
-    pipe_height = PIPE_H
-    pipe_x = SCREEN_WIDTH + 10
+    gapY = random.randrange(0, int(BASE_H * 0.6 - PIPE_GAP))
+    gapY += int(BASE_H * 0.2)
+    pipeHeight = PIPE_H
+    pipeX = SCREEN_WIDTH + MODX
 
     return [
-        {'x': pipe_x, 'y': gap_y - pipe_height},  # upper pipe
-        {'x': pipe_x, 'y': gap_y + PIPE_GAP},  # lower pipe
+        {'x': pipeX, 'y': gapY - pipeHeight - MODY},  # upper pipe
+        {'x': pipeX, 'y': gapY + PIPE_GAP + MODY},  # lower pipe
     ]
 
 
