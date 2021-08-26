@@ -8,6 +8,7 @@ import sys
 import os
 from collections import deque
 from itertools import cycle
+import time
 
 import pygame
 from pygame.constants import *
@@ -110,57 +111,56 @@ def main():
         # print(HIT_MASKS['pipe'][0])
 
         start_game = welcome_animation()
-        # print(start_game.items())
         game_info = main_game(start_game)
-        # showGameOverScreen(game_info)
+        show_game_over_screen(game_info)
 
 
 def welcome_animation():
     """Show welcome animation"""
-    # player_index = 0
-    # player_generation = cycle([0, 1, 2, 1])
-    # loops = 0
+    player_index = 0
+    player_generation = cycle([0, 1, 2, 1])
+    loops = 0
     #
-    # player_x = int(SCREEN_WIDTH * 2)
-    # player_y = int((SCREEN_HEIGHT - IMAGES['player'][0].get_height()) / 2)
+    player_x = int(SCREEN_WIDTH * 2)
+    player_y = int((SCREEN_HEIGHT - IMAGES['player'][0].get_height()) / 2)
     #
-    # message_x = int((SCREEN_WIDTH - IMAGES['message'].get_width()) / 2)
-    # message_y = int(SCREEN_HEIGHT * 0.12)
+    message_x = int((SCREEN_WIDTH - IMAGES['message'].get_width()) / 2)
+    message_y = int(SCREEN_HEIGHT * 0.12)
     #
-    # shift = IMAGES['base'].get_width() - IMAGES['background'].get_width()
+    shift = IMAGES['base'].get_width() - IMAGES['background'].get_width()
     #
-    # base_x = 0
-    #
-    # player_flap = {'val': 0, 'dir': 1}
-    #
-    # while True:
-    #     for event in pygame.event.get():
-    #         if event.type == QUIT or (event.type == KEYDOWN and event.key == K_ESCAPE):
-    #             pygame.quit()
-    #             sys.exit()
-    #         if event.type == KEYDOWN and (event.key == K_SPACE or event.key == K_UP):
-    #             SOUNDS['wing'].play()
-    #             return {
-    #                 'player_y': player_y + player_flap['val'],
-    #                 'base_x': base_x,
-    #                 'player_generation': player_generation
-    #             }
-    #
-    #     if (loops + 1) % 5 == 0:
-    #         player_index = player_generation.__next__()
-    #     loops += (loops + 1) % 30
-    #     base_x = - ((-base_x + 3) % shift)
-    #     playerShm(player_flap)
-    #     # print(loops)
-    #
-    #     SCREEN.blit(IMAGES['background'], (0, 0))
-    #     SCREEN.blit(IMAGES['player'][player_index], (player_x, player_y + player_flap['val']))
-    #     SCREEN.blit(IMAGES['message'], (message_x, message_y))
-    #     SCREEN.blit(IMAGES['base'], (base_x, BASE_H))
-    #
-    #     pygame.display.update()
-    #     FPS_CLOCK.tick(FPS)
-    # print(IMAGES['pipe'][0].get_height())
+    base_x = 0
+
+    player_flap = {'val': 0, 'dir': 1}
+
+    while True:
+        for event in pygame.event.get():
+            if event.type == QUIT or (event.type == KEYDOWN and event.key == K_ESCAPE):
+                pygame.quit()
+                sys.exit()
+            if event.type == KEYDOWN and (event.key == K_SPACE or event.key == K_UP):
+                SOUNDS['wing'].play()
+                return {
+                    'player_y': player_y + player_flap['val'],
+                    'base_x': base_x,
+                    'player_generation': player_generation
+                }
+
+        if (loops + 1) % 5 == 0:
+            player_index = player_generation.__next__()
+        loops += (loops + 1) % 30
+        base_x = - ((-base_x + 3) % shift)
+        player_shm(player_flap)
+        print(loops)
+
+        SCREEN.blit(IMAGES['background'], (0, 0))
+        SCREEN.blit(IMAGES['player'][player_index], (player_x, player_y + player_flap['val']))
+        SCREEN.blit(IMAGES['message'], (message_x, message_y))
+        SCREEN.blit(IMAGES['base'], (base_x, BASE_H))
+
+        pygame.display.update()
+        FPS_CLOCK.tick(FPS)
+    print(IMAGES['pipe'][0].get_height())
     player_y = int((SCREEN_HEIGHT - IMAGES['player'][0].get_height()) / 2)
     player_generation = cycle([0, 1, 2, 1])
     return {
@@ -240,6 +240,7 @@ def main_game(info):
         if crash_test:
             bot.update_qvalues()
             bot.qvalues_to_json(force=False)
+
             return {
                 'y': player_y,
                 'base_x': base_x,
@@ -247,6 +248,7 @@ def main_game(info):
                 'lower_pipes': lower_pipes,
                 'score': score,
                 'player_velocity': player_vel_y,
+                'crash': crash_test
             }
 
         # check for score
@@ -257,7 +259,7 @@ def main_game(info):
                 score += 1
                 SOUNDS["point"].play()
 
-        # player_id basex change
+        # player_id base_x change
         if (loops + 1) % 3 == 0:
             player_id = player_generation.__next__()
         loops = (loops + 1) % 30
@@ -359,32 +361,82 @@ def getRandomPipe():
     MODY = MODX / 3  #change for increase or decrease y distance between pipes default --> 0
 
     # y of gap between upper and lower pipe
-    gapY = random.randrange(0, int(BASE_H * 0.6 - PIPE_GAP))
-    gapY += int(BASE_H * 0.2)
+    gap_y = random.randrange(0, int(BASE_H * 0.6 - PIPE_GAP))
+    gap_y += int(BASE_H * 0.2)
     pipeHeight = IMAGES['pipe'][0].get_height()
     pipeX = SCREEN_WIDTH + MODX
 
     return [
-        {'x': pipeX, 'y': gapY - pipeHeight - MODY},  # upper pipe
-        {'x': pipeX, 'y': gapY + PIPE_GAP + MODY},  # lower pipe
+        {'x': pipeX, 'y': gap_y - pipeHeight - MODY},  # upper pipe
+        {'x': pipeX, 'y': gap_y  + PIPE_GAP + MODY},  # lower pipe
     ]
 
 
-def playerShm(playerShm):
-    """oscillates the value of playerShm['val'] between 8 and -8"""
-    if abs(playerShm['val']) == 8:
-        playerShm['dir'] *= -1
+def player_shm(player_shm):
+    """oscillates the value of player_shm['val'] between 8 and -8"""
+    if abs(player_shm['val']) == 8:
+        player_shm['dir'] *= -1
 
-    if playerShm['dir'] == 1:
-        playerShm['val'] += 1
+    if player_shm['dir'] == 1:
+        player_shm['val'] += 1
     else:
-        playerShm['val'] -= 1
+        player_shm['val'] -= 1
 
 
-def show_game_over_screen(crash_info):
-    if bot.gameNR == 1000:
-        bot.qvalues_to_json(force=True)
-        sys.exit()
+def show_game_over_screen(game_info):
+    """crashes the player down and shows gameover image"""
+    score = game_info["score"]
+    player_x = SCREEN_WIDTH * 0.2
+    player_y = game_info["y"]
+    player_height = IMAGES["player"][0].get_height()
+    player_vel_y = game_info["player_velocity"]
+    player_acc_y = 2
+
+    base_x = game_info["base_x"]
+
+    upper_pipes, lower_pipes = game_info["upper_pipes"], game_info["lower_pipes"]
+
+    # play hit and die sounds
+    SOUNDS["hit"].play()
+
+    if game_info["crash"]:
+        SOUNDS["die"].play()
+
+    while True:
+        for event in pygame.event.get():
+            if event.type == QUIT or (event.type == KEYDOWN and event.key == K_ESCAPE):
+                pygame.quit()
+                sys.exit()
+            if event.type == KEYDOWN and (event.key == K_SPACE or event.key == K_UP):
+                if player_y + player_height >= BASE_H - 1:
+                    return
+
+        # player y shift
+        if player_y + player_height < BASE_H - 1:
+            player_y += min(player_vel_y, BASE_H - player_y - player_height)
+
+        # player velocity change
+        if player_vel_y < 15:
+            player_vel_y += player_acc_y
+
+        # draw sprites
+        SCREEN.blit(IMAGES["background"], (0, 0))
+
+        for upper, lower in zip(upper_pipes, lower_pipes):
+            SCREEN.blit(IMAGES["pipe"][0], (upper["x"], upper["y"]))
+            SCREEN.blit(IMAGES["pipe"][1], (lower["x"], lower["y"]))
+
+        SCREEN.blit(IMAGES["base"], (base_x, BASE_H))
+        show_score(score)
+        player_surface = pygame.transform.rotate(IMAGES['player'][1], -60)
+        SCREEN.blit(player_surface, (player_x, player_y))
+        SCREEN.blit(IMAGES['gameover'], (50, 180))
+        #SCREEN.blit(IMAGES["player"][1], (player_x, player_y))
+
+        FPS_CLOCK.tick(FPS)
+        pygame.display.update()
+
+
 
 
 def show_score(score):
