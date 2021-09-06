@@ -1,21 +1,15 @@
 import argparse
-import copy
-import json
+import os
 import pickle
 import random
-import string
 import sys
-import os
-from collections import deque
 from itertools import cycle
-import time
 
 import pygame
 from pygame.constants import *
 
-from learning import Learning
-
 from assets import *
+from learning import Learning
 
 sys.path.append(os.getcwd())
 
@@ -28,7 +22,6 @@ MODE = args.mode
 
 # init bot
 bot = Learning(MODE)
-
 
 
 def main():
@@ -86,10 +79,18 @@ def main():
 
         # select random pipe
         pipe_index = random.randint(0, len(PIPES) - 1)
-        IMAGES['pipe'] = (
-            pygame.transform.rotate(pygame.image.load(PIPES[pipe_index]).convert_alpha(), 180),
-            pygame.image.load(PIPES[pipe_index]).convert_alpha(),
-        )
+        pipe = pygame.image.load(PIPES[pipe_index])
+
+        if MODE == 'extra':
+            IMAGES['pipe'] = (
+                pygame.transform.smoothscale(pygame.transform.rotate(pipe.convert_alpha(), 180), (200, 320)),
+                pygame.transform.smoothscale(pygame.image.load(PIPES[pipe_index]).convert_alpha(), (200, 320)),
+            )
+        else:
+            IMAGES['pipe'] = (
+                pygame.transform.rotate(pipe.convert_alpha(), 180),
+                pygame.image.load(PIPES[pipe_index]).convert_alpha(),
+            )
 
         # hitmask for pipes
         HIT_MASKS['pipe'] = (
@@ -103,12 +104,10 @@ def main():
             get_hitmask(image_alpha=IMAGES['player'][1]),
             get_hitmask(image_alpha=IMAGES['player'][2]),
         )
-        # print(HIT_MASKS)
+
         with open('data/hit_masks.pkl', 'wb') as hit_masks:
             pickle.dump(HIT_MASKS, hit_masks, pickle.HIGHEST_PROTOCOL)
         hit_masks.close()
-
-        # print(HIT_MASKS['pipe'][0])
 
         start_game = welcome_animation()
         game_info = main_game(start_game)
@@ -151,7 +150,7 @@ def welcome_animation():
         loops += (loops + 1) % 30
         base_x = - ((-base_x + 3) % shift)
         player_shm(player_flap)
-        print(loops)
+        # print(loops)
 
         SCREEN.blit(IMAGES['background'], (0, 0))
         SCREEN.blit(IMAGES['player'][player_index], (player_x, player_y + player_flap['val']))
@@ -160,7 +159,7 @@ def welcome_animation():
 
         pygame.display.update()
         FPS_CLOCK.tick(FPS)
-    print(IMAGES['pipe'][0].get_height())
+    # print(IMAGES['pipe'][0].get_height())
     player_y = int((SCREEN_HEIGHT - IMAGES['player'][0].get_height()) / 2)
     player_generation = cycle([0, 1, 2, 1])
     return {
@@ -178,8 +177,9 @@ def main_game(info):
     base_x = info['base_x']
     shift = IMAGES['base'].get_width() - IMAGES['background'].get_width()
 
-    pipe1 = getRandomPipe()
-    pipe2 = getRandomPipe()
+    pipe_1 = get_random_pipe()
+    pipe2 = get_random_pipe()
+    pipe1 = pipe_1
 
     if MODE == 'easy':
         mode_x = ELEVATION - EASY / 2
@@ -187,17 +187,20 @@ def main_game(info):
         mode_x = ELEVATION - MEDIUM / 2
     elif MODE == 'hard':
         mode_x = ELEVATION - HARD / 2
+    # one extra level
+    elif MODE == 'extra':
+        mode_x = ELEVATION - EXTRA / 2
 
     # list of upper pipes
     upper_pipes = [
-        {'x': SCREEN_WIDTH + mode_x , 'y': pipe1[0]['y']},
-        {'x': SCREEN_WIDTH + ELEVATION + (SCREEN_WIDTH / 2) , 'y': pipe2[0]['y']}
+        {'x': SCREEN_WIDTH + mode_x, 'y': pipe1[0]['y']},
+        {'x': SCREEN_WIDTH + ELEVATION + (SCREEN_WIDTH / 2), 'y': pipe2[0]['y']}
     ]
 
     # list of lower pipes
     lower_pipes = [
         {'x': SCREEN_WIDTH + mode_x, 'y': pipe1[1]['y']},
-        {'x': SCREEN_WIDTH + ELEVATION + (SCREEN_WIDTH / 2) , 'y': pipe2[1]['y']}
+        {'x': SCREEN_WIDTH + ELEVATION + (SCREEN_WIDTH / 2), 'y': pipe2[1]['y']}
     ]
 
     pipe_vel_x = -4
@@ -208,7 +211,6 @@ def main_game(info):
     player_acc_y = 1
     player_flap_speed = -9
     player_flapped = False
-
 
     while True:
         if -player_x + lower_pipes[0]['x'] > -30:
@@ -280,7 +282,7 @@ def main_game(info):
 
         # add new pipe when first pipe is about exit
         if 0 < upper_pipes[0]['x'] < 5:
-            new_pipe = getRandomPipe()
+            new_pipe = get_random_pipe()
             upper_pipes.append(new_pipe[0])
             lower_pipes.append(new_pipe[1])
 
@@ -349,38 +351,41 @@ def get_collision(player_rectangle, pipe_rectangle, p_hitmask, pipe_hitmask):
     return False
 
 
-def getRandomPipe():
+def get_random_pipe():
     """Returns a randomly generated pipe"""
-    #setup for the distances between pipes
+    # setup for the distances between pipes
     if MODE == 'easy':
-        MODX = EASY #change for increase or decrease x distance between pipes default --> 10
+        modx = EASY  # change for increase or decrease x distance between pipes default --> 10
     elif MODE == 'medium':
-        MODX = MEDIUM
+        modx = MEDIUM
+    elif MODE == 'hard':
+        modx = HARD
     else:
-        MODX = HARD
-    MODY = MODX / 3  #change for increase or decrease y distance between pipes default --> 0
+        modx = EXTRA
+
+    mod_y = modx / 3  # change for increase or decrease y distance between pipes default --> 0
 
     # y of gap between upper and lower pipe
     gap_y = random.randrange(0, int(BASE_H * 0.6 - PIPE_GAP))
     gap_y += int(BASE_H * 0.2)
-    pipeHeight = IMAGES['pipe'][0].get_height()
-    pipeX = SCREEN_WIDTH + MODX
+    pipe_height = IMAGES['pipe'][0].get_height()
+    pipe_x = SCREEN_WIDTH + modx
 
     return [
-        {'x': pipeX, 'y': gap_y - pipeHeight - MODY},  # upper pipe
-        {'x': pipeX, 'y': gap_y  + PIPE_GAP + MODY},  # lower pipe
+        {'x': pipe_x, 'y': gap_y - pipe_height},  # upper pipe
+        {'x': pipe_x, 'y': gap_y + PIPE_GAP},  # lower pipe
     ]
 
 
-def player_shm(player_shm):
-    """oscillates the value of player_shm['val'] between 8 and -8"""
-    if abs(player_shm['val']) == 8:
-        player_shm['dir'] *= -1
+def player_shm(player_movement):
+    """oscillates the value of player_movement['val'] between 8 and -8"""
+    if abs(player_movement['val']) == 8:
+        player_movement['dir'] *= -1
 
-    if player_shm['dir'] == 1:
-        player_shm['val'] += 1
+    if player_movement['dir'] == 1:
+        player_movement['val'] += 1
     else:
-        player_shm['val'] -= 1
+        player_movement['val'] -= 1
 
 
 def show_game_over_screen(game_info):
@@ -431,12 +436,10 @@ def show_game_over_screen(game_info):
         player_surface = pygame.transform.rotate(IMAGES['player'][1], -60)
         SCREEN.blit(player_surface, (player_x, player_y))
         SCREEN.blit(IMAGES['gameover'], (50, 180))
-        #SCREEN.blit(IMAGES["player"][1], (player_x, player_y))
+        # SCREEN.blit(IMAGES["player"][1], (player_x, player_y))
 
         FPS_CLOCK.tick(FPS)
         pygame.display.update()
-
-
 
 
 def show_score(score):

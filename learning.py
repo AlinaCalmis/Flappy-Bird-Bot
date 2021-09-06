@@ -1,8 +1,6 @@
-import codecs
 import json
 from itertools import chain
 from json import JSONDecodeError
-import random
 
 
 class Learning:
@@ -13,7 +11,7 @@ class Learning:
         self.previous_action = 0
         self.discount_factor = 1
         self.learning_rate = 0.8
-        self.gameNR = 0
+        self.game_cnt = 0
         self.LOAD_N = 25
         self.reward = {0: 1, 1: -100}
         self.moves = []
@@ -21,7 +19,6 @@ class Learning:
         self.mode = mode
         self.qvalues = {}
         self.load_qvalues()
-
 
     def initialize_qvalues(self):
         # qval = {}
@@ -49,7 +46,6 @@ class Learning:
 
         file.close()
 
-    # analizeaza ultima miscare si alege cea mai buna optiune
     def act(self, x, y, vel):
         state = self.get_state(x, y, vel)
 
@@ -88,11 +84,11 @@ class Learning:
                 last_flap = False
                 dead = False
 
-            self.qvalues[state][action] = ((self.learning_rate) * self.qvalues[state][action] + self.learning_rate
+            self.qvalues[state][action] = (self.learning_rate * self.qvalues[state][action] + self.learning_rate
                                            * (reward + self.discount_factor * max(self.qvalues[new_state]) -
                                               self.qvalues[state][action]))
 
-        self.gameNR += 1
+        self.game_cnt += 1
 
         self.moves = []
 
@@ -113,7 +109,7 @@ class Learning:
         return state
 
     def qvalues_to_json(self, force=False):
-        if self.gameNR % self.LOAD_N == 0 or force:
+        if self.game_cnt % self.LOAD_N == 0 or force:
             with open(f"data\q_values_mode_{self.mode}.json", "w") as file:
                 json.dump(self.qvalues, file, ensure_ascii=False)
             file.close()

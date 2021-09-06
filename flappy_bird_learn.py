@@ -1,22 +1,18 @@
 import argparse
-import copy
-import json
+import os
 import pickle
 import random
 import sys
-import os
-from collections import deque
 from itertools import cycle
 
 import pygame
-from pygame.constants import *
-
-from learning import Learning
 
 from assets import *
+from learning import Learning
+
+import matplotlib.pyplot as plt
 
 sys.path.append(os.getcwd())
-
 
 sys.path.append(os.getcwd())
 
@@ -38,13 +34,12 @@ def main():
         HIT_MASKS = pickle.load(hit_masks)
     hit_masks.close()
 
-
     while True:
         start_game = welcome_animation()
 
         game_info = main_game(start_game)
 
-        showGameOverScreen(game_info)
+        show_game_over_screen(game_info)
 
 
 def welcome_animation():
@@ -74,6 +69,8 @@ def main_game(info):
         mode_x = ELEVATION - MEDIUM / 2
     elif MODE == 'hard':
         mode_x = ELEVATION - HARD / 2
+    else:
+        mode_x = ELEVATION - EXTRA / 2
 
     # list of upper pipes
     upper_pipes = [
@@ -125,7 +122,10 @@ def main_game(info):
         # check for score
         player_mid_pos = player_x + PLAYER_W / 2
         for pipe in upper_pipes:
-            pipe_mid_pos = pipe["x"] + PIPE_W / 2
+            if MODE == 'extra':
+                pipe_mid_pos = pipe["x"] + EXTRA_PIPE_W / 2
+            else:
+                pipe_mid_pos = pipe["x"] + PIPE_W / 2
             if pipe_mid_pos <= player_mid_pos < pipe_mid_pos + 4:
                 score += 1
 
@@ -155,7 +155,11 @@ def main_game(info):
             lower_pipes.append(new_pipe[1])
 
         # remove first pipe if it is out of the screen
-        if upper_pipes[0]['x'] < -PIPE_W:
+        if MODE == 'extra':
+            width = EXTRA_PIPE_W
+        else:
+            width = PIPE_W
+        if upper_pipes[0]['x'] < -width:
             upper_pipes.pop(0)
             lower_pipes.pop(0)
 
@@ -165,7 +169,7 @@ def did_collide(id, player_x, player_y, upper_pipes, lower_pipes):
         return True
 
     height = PIPE_H
-    width = PIPE_W
+    width = EXTRA_PIPE_W if MODE == 'extra' else PIPE_W
 
     player_rectangle = pygame.Rect(player_x, player_y, PLAYER_W,
                                    PLAYER_H)
@@ -189,7 +193,6 @@ def did_collide(id, player_x, player_y, upper_pipes, lower_pipes):
 
 def get_collision(player_rectangle, pipe_rectangle, p_hitmask, pipe_hitmask):
     rect = player_rectangle.clip(pipe_rectangle)
-
     if rect.width == 0 or rect.height == 0:
         return False
 
@@ -207,42 +210,48 @@ def get_collision(player_rectangle, pipe_rectangle, p_hitmask, pipe_hitmask):
 def get_random_pipe():
     """Returns a randomly generated pipe"""
     if MODE == 'easy':
-        MODX = EASY  # change for increase or decrease x distance between pipes default --> 10
+        mod_x = EASY  # change for increase or decrease x distance between pipes default --> 10
     elif MODE == 'medium':
-        MODX = MEDIUM
+        mod_x = MEDIUM
+    elif MODE == 'hard':
+        mod_x = HARD
     else:
-        MODX = HARD
-    MODY = MODX / 3  # change for increase or decrease y distance between pipes default --> 0
+        mod_x = EXTRA
+    mod_y = mod_x / 3  # change for increase or decrease y distance between pipes default --> 0
 
     # y of gap between upper and lower pipe
-    gapY = random.randrange(0, int(BASE_H * 0.6 - PIPE_GAP))
-    gapY += int(BASE_H * 0.2)
-    pipeHeight = PIPE_H
-    pipeX = SCREEN_WIDTH + MODX
+    gap_y = random.randrange(0, int(BASE_H * 0.6 - PIPE_GAP))
+    gap_y += int(BASE_H * 0.2)
+    pipe_height = PIPE_H
+    pipe_x = SCREEN_WIDTH + mod_x
 
     return [
-        {'x': pipeX, 'y': gapY - pipeHeight - MODY},  # upper pipe
-        {'x': pipeX, 'y': gapY + PIPE_GAP + MODY},  # lower pipe
+        {'x': pipe_x, 'y': gap_y - pipe_height - mod_y},  # upper pipe
+        {'x': pipe_x, 'y': gap_y + PIPE_GAP + mod_y},  # lower pipe
     ]
 
 
-def playerShm(playerShm):
-    """oscillates the value of playerShm['val'] between 8 and -8"""
-    if abs(playerShm['val']) == 8:
-        playerShm['dir'] *= -1
+def player_shm(player_movement):
+    """oscillates the value of player_movement['val'] between 8 and -8"""
+    if abs(player_movement['val']) == 8:
+        player_movement['dir'] *= -1
 
-    if playerShm['dir'] == 1:
-        playerShm['val'] += 1
+    if player_movement['dir'] == 1:
+        player_movement['val'] += 1
     else:
-        playerShm['val'] -= 1
+        player_movement['val'] -= 1
 
 
-def showGameOverScreen(crashInfo):
-    score = crashInfo['score']
-    print(str(bot.gameNR - 1) + '|' + str(score))
-    if bot.gameNR == (100000):
-        bot.qvalues_to_json(force=True)
-        sys.exit()
+def show_game_over_screen(crash_info):
+    score = crash_info['score']
+    print(str(bot.game_cnt - 1) + '|' + str(score))
+    REPS.append(bot.game_cnt)
+    SCORES.append(score)
+    bot.qvalues_to_json(force=True)
+    # if bot.game_cnt == REPEATS:
+    #     # plot()
+    #     bot.qvalues_to_json(force=True)
+    #     sys.exit()
 
 
 def get_hitmask(image_alpha):
@@ -253,6 +262,16 @@ def get_hitmask(image_alpha):
         for y in range(image_alpha.get_height()):
             mask[x].append(bool(image_alpha.get_at((x, y))[3]))
     return mask
+
+
+# def plot():
+#     plt.scatter(REPS,SCORES, label="stars", color="green",
+#                 marker="*", s=30)
+#     plt.xlabel("Repetitions")
+#     plt.ylabel("Scores")
+#
+#     plt.title(f'{MODE}_learning')
+#     plt.show()
 
 
 if __name__ == '__main__':
